@@ -17,6 +17,15 @@ public class Slingshot : MonoBehaviour
 
     bool isMouseDown;
 
+    public GameObject birdPrefab;
+
+    public float birdPositionOffset;
+
+    Rigidbody2D birdRigidbody;
+    Collider2D birdCollider;
+
+    public float force;
+
     void Start()
     {
         lineRenderers[0].positionCount = 2;
@@ -24,6 +33,18 @@ public class Slingshot : MonoBehaviour
         lineRenderers[0].SetPosition(0, stripPositions[0].position);
         lineRenderers[1].SetPosition(0, stripPositions[1].position);
 
+        CreateBird();
+    }
+
+    void CreateBird()
+    {
+        birdRigidbody = Instantiate(birdPrefab).GetComponent<Rigidbody2D>();
+        birdCollider = birdRigidbody.GetComponent<Collider2D>();
+        birdCollider.enabled = false;
+
+        birdRigidbody.isKinematic = true;
+
+        ResetStrips();
     }
 
     void Update()
@@ -39,6 +60,11 @@ public class Slingshot : MonoBehaviour
             currentPosition = ClampBoundary(currentPosition);
 
             SetStrips(currentPosition);
+
+            if (birdCollider)
+            {
+                birdCollider.enabled = true;
+            }
         }
         else
         {
@@ -54,6 +80,18 @@ public class Slingshot : MonoBehaviour
     private void OnMouseUp()
     {
         isMouseDown = false;
+        Shoot();
+    }
+
+    void Shoot()
+    {
+        birdRigidbody.isKinematic = false;
+        Vector3 birdForce = (currentPosition - center.position) * force * -1;
+        birdRigidbody.velocity = birdForce;
+
+        birdRigidbody = null;
+        birdCollider = null;
+        Invoke("CreateBird", 2);
     }
 
     void ResetStrips()
@@ -66,6 +104,13 @@ public class Slingshot : MonoBehaviour
     {
         lineRenderers[0].SetPosition(1, position);
         lineRenderers[1].SetPosition(1, position);
+
+        if (birdRigidbody)
+        {
+            Vector3 dir = position - center.position;
+            birdRigidbody.transform.position = position + dir.normalized * birdPositionOffset;
+            birdRigidbody.transform.right = -dir.normalized;
+        }
     }
 
     Vector3 ClampBoundary(Vector3 vector)
